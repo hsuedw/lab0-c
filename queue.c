@@ -30,7 +30,7 @@ struct list_head *q_new()
 /* Free all storage used by queue */
 void q_free(struct list_head *l)
 {
-    if (!l || list_empty(l))
+    if (!l)
         return;
 
     struct list_head *it = l->next;
@@ -138,7 +138,16 @@ bool q_insert_tail(struct list_head *head, char *s)
  */
 element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 {
-    return NULL;
+    if (!head || list_empty(head) || !sp)
+        return NULL;
+
+    // cppcheck-suppress nullPointer
+    element_t *target = list_entry(head->next, element_t, list);
+    list_del_init(head->next);
+    strncpy(sp, target->value, bufsize - 1);
+
+    sp[bufsize - 1] = '\0';
+    return target;
 }
 
 /*
@@ -169,7 +178,7 @@ int q_size(struct list_head *head)
     if (!head)
         return 0;
 
-    int len = 0;
+    size_t len = 0;
     struct list_head *li;
 
     list_for_each (li, head)
