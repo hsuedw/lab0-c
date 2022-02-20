@@ -28,7 +28,20 @@ struct list_head *q_new()
 }
 
 /* Free all storage used by queue */
-void q_free(struct list_head *l) {}
+void q_free(struct list_head *l)
+{
+    if (!l || list_empty(l))
+        return;
+
+    struct list_head *it = l->next;
+    while (it != l) {
+        element_t *e = container_of(it, element_t, list);
+        it = it->next;
+        q_release_element(e);
+    }
+    element_t *head = container_of(l, element_t, list);
+    free(head);
+}
 
 /*
  * q_init_element() initializes a new object of element_t.
