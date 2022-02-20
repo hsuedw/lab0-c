@@ -31,21 +31,7 @@ struct list_head *q_new()
 void q_free(struct list_head *l) {}
 
 /*
- * Create a new object of element_t
- * Return NULL if could not allocate space.
- */
-element_t *q_new_element()
-{
-    element_t *ne = malloc(sizeof(element_t));
-
-    if (!ne)
-        return NULL;
-
-    return ne;
-}
-
-/*
- * Try to initialize a new object of element_t
+ * q_init_element() initializes a new object of element_t.
  * Assume e and s are not NULL and point to valid memory address.
  * Return true if successful. Otherwise, return false.
  */
@@ -63,6 +49,25 @@ bool q_init_element(element_t *e, char *s)
 }
 
 /*
+ * q_new_element() create a new object of element_t.
+ * Return NULL if could not allocate space.
+ */
+element_t *q_new_element(char *s)
+{
+    element_t *ne = malloc(sizeof(element_t));
+    if (!ne)
+        return NULL;
+
+    if (!q_init_element(ne, s)) {
+        free(ne);
+        return NULL;
+    }
+
+    return ne;
+}
+
+
+/*
  * Attempt to insert element at head of queue.
  * Return true if successful.
  * Return false if q is NULL or could not allocate space.
@@ -74,14 +79,9 @@ bool q_insert_head(struct list_head *head, char *s)
     if (!head)
         return false;
 
-    element_t *ne = q_new_element();
+    element_t *ne = q_new_element(s);
     if (!ne)
         return false;
-
-    if (!q_init_element(ne, s)) {
-        free(ne);
-        return false;
-    }
 
     list_add(&ne->list, head);
 
@@ -97,6 +97,15 @@ bool q_insert_head(struct list_head *head, char *s)
  */
 bool q_insert_tail(struct list_head *head, char *s)
 {
+    if (!head)
+        return false;
+
+    element_t *ne = q_new_element(s);
+    if (!ne)
+        return false;
+
+    list_add_tail(&ne->list, head);
+
     return true;
 }
 
