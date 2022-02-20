@@ -201,16 +201,14 @@ bool q_delete_mid(struct list_head *head)
     if (!head || list_empty(head))
         return false;
 
-    struct list_head *fast = head->next, *slow = head->next, *pre_slow = head;
+    struct list_head *fast = head->next, *slow = head->next;
     while (fast != head && fast->next != head) {
-        pre_slow = slow;
         slow = slow->next;
         fast = fast->next->next;
     }
 
-    struct list_head *x = pre_slow->next;
-    list_del_init(x);
-    element_t *e = container_of(x->next, element_t, list);
+    list_del_init(slow);
+    element_t *e = container_of(slow->next, element_t, list);
     q_release_element(e);
 
     return true;
