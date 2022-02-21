@@ -251,9 +251,37 @@ bool q_delete_mid(struct list_head *head)
  * Note: this function always be called after sorting, in other words,
  * list is guaranteed to be sorted in ascending order.
  */
+// https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii/
 bool q_delete_dup(struct list_head *head)
 {
-    // https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii/
+    if (!head || list_empty(head) || list_is_singular(head))
+        return false;
+
+    struct list_head *prev = head->next, *node = head->next->next;
+    bool dup_flag = false;
+
+    while (prev != head && node != head) {
+        element_t *prev_element = list_entry(prev, element_t, list);
+        element_t *node_element = list_entry(node, element_t, list);
+
+        while (node != head &&
+               strcmp(prev_element->value, node_element->value) == 0) {
+            dup_flag = true;
+            list_del(node);
+            q_release_element(node_element);
+            node = prev->next;
+            node_element = list_entry(node, element_t, list);
+        }
+
+        if (dup_flag) {
+            dup_flag = false;
+            list_del(prev);
+            q_release_element(prev_element);
+        }
+
+        prev = node;
+        node = node->next;
+    }
     return true;
 }
 
