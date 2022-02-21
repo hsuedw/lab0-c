@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -262,7 +263,7 @@ bool q_delete_dup(struct list_head *head)
 // https://leetcode.com/problems/swap-nodes-in-pairs/
 void q_swap(struct list_head *head)
 {
-    if (!head || list_empty(head) || head->next->next == head)
+    if (!head || list_empty(head) || list_is_singular(head))
         return;
 
     struct list_head *it = head->next;
@@ -296,8 +297,73 @@ void q_reverse(struct list_head *head)
 }
 
 /*
+ * __q_merge() is an internal API for q_merge_sort().
+ * Input: left and right are two sorted doubly linked lists.
+ * Output: A sorted doubly linked list merged from left and right.
+ */
+struct list_head *__q_merge(struct list_head *left, struct list_head *right)
+{
+    struct list_head *head = NULL, **ptr = &head, **node;
+
+    for (node = NULL; left && right; *node = (*node)->next) {
+        if (strcmp(list_entry(left, element_t, list)->value,
+                   list_entry(right, element_t, list)->value) < 0)
+            node = &left;
+        else
+            node = &right;
+
+        *ptr = *node;
+        ptr = &(*ptr)->next;
+    }
+    *ptr = (struct list_head *) ((uintptr_t) left | (uintptr_t) right);
+
+    return head;
+}
+
+struct list_head *q_merge_sort(struct list_head *head)
+{
+    if (!head->next)
+        return head;
+
+    struct list_head *slow = head, *fast = head;
+    while (fast->next && fast->next->next) {
+        slow = slow->next;
+        fast = fast->next->next;
+    }
+
+    struct list_head *head2 = slow->next;
+    slow->next = NULL;
+
+    struct list_head *left = q_merge_sort(head), *right = q_merge_sort(head2);
+    return __q_merge(left, right);
+}
+
+/*
  * Sort elements of queue in ascending order
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */
-void q_sort(struct list_head *head) {}
+void q_sort(struct list_head *head)
+{
+    if (!head || list_empty(head) || list_is_singular(head))
+        return;
+
+    struct list_head *node = head->next;
+    head->prev->next = NULL;
+    head->next = NULL;
+
+    node = q_merge_sort(node);
+
+    // We use doubly linked list to implement queue. However, q_merge_sort()
+    // treat it as a singly linked list and only use the next pointer to sort
+    // all the nodes. Use a loop and traverse along the next pointers to
+    // rearrange the prev pointers.
+    struct list_head *it = head;
+    it->next = node;
+    while (it->next) {
+        it->next->prev = it;
+        it = it->next;
+    }
+    it->next = head;
+    head->prev = it;
+}
