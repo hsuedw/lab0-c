@@ -6,8 +6,6 @@
 #include "harness.h"
 #include "queue.h"
 
-#include "mylist.h"
-
 /* Notice: sometimes, Cppcheck would find the potential NULL pointer bugs,
  * but some of them cannot occur. You can suppress them by adding the
  * following line.
@@ -296,7 +294,9 @@ void q_swap(struct list_head *head)
 
     struct list_head *it = head->next;
     while (it != head && it->next != head) {
-        list_swap(it->next, it);
+        struct list_head *tmp = it->next;
+        list_del_init(it);
+        list_add(it, tmp);
         it = it->next;
     }
 }
