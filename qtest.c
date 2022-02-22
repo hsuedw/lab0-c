@@ -823,7 +823,7 @@ static void sigalrmhandler(int sig)
 static void queue_init()
 {
     fail_count = 0;
-    l_meta.l = NULL;
+    l_meta.l = q_new();
     signal(SIGSEGV, sigsegvhandler);
     signal(SIGALRM, sigalrmhandler);
 }
