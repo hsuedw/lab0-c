@@ -142,10 +142,9 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
     if (!head || list_empty(head) || !sp)
         return NULL;
 
-    // cppcheck-suppress nullPointer
     element_t *target = list_entry(head->next, element_t, list);
     list_del_init(head->next);
-    strncpy(sp, target->value, bufsize - 1);
+    memcpy(sp, target->value, bufsize - 1);
 
     sp[bufsize - 1] = '\0';
     return target;
@@ -157,7 +156,15 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
  */
 element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 {
-    return q_remove_head(head->prev->prev, sp, bufsize);
+    if (!head || list_empty(head) || !sp)
+        return NULL;
+
+    element_t *target = list_entry(head->prev, element_t, list);
+    list_del_init(head->prev);
+    memcpy(sp, target->value, bufsize - 1);
+
+    sp[bufsize - 1] = '\0';
+    return target;
 }
 
 /*
