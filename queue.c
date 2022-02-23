@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "harness.h"
 #include "queue.h"
@@ -144,7 +145,7 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 
     element_t *target = list_entry(head->next, element_t, list);
     list_del_init(head->next);
-    memcpy(sp, target->value, bufsize - 1);
+    strncpy(sp, target->value, bufsize - 1);
 
     sp[bufsize - 1] = '\0';
     return target;
@@ -161,7 +162,7 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 
     element_t *target = list_entry(head->prev, element_t, list);
     list_del_init(head->prev);
-    memcpy(sp, target->value, bufsize - 1);
+    strncpy(sp, target->value, bufsize - 1);
 
     sp[bufsize - 1] = '\0';
     return target;
@@ -401,4 +402,25 @@ void q_sort(struct list_head *head)
     }
     it->next = head;
     head->prev = it;
+}
+
+bool q_shuffle(struct list_head *head)
+{
+    if (!head || list_empty(head) || list_is_singular(head))
+        return false;
+
+    srand(time(NULL));
+
+    int window = q_size(head);
+    while (window) {
+        int x = rand() % window;
+        struct list_head *it = head->next;
+        for (int i = 0; i < x; ++i)
+            it = it->next;
+        list_del_init(it);
+        list_add(it, head);
+        --window;
+    }
+
+    return true;
 }
