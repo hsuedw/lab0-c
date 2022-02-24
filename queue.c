@@ -6,6 +6,7 @@
 
 #include "harness.h"
 #include "queue.h"
+#include "report.h"
 
 /* Notice: sometimes, Cppcheck would find the potential NULL pointer bugs,
  * but some of them cannot occur. You can suppress them by adding the
@@ -409,17 +410,34 @@ bool q_shuffle(struct list_head *head)
     if (!head || list_empty(head) || list_is_singular(head))
         return false;
 
-    srand(time(NULL));
-
-    int window = q_size(head);
-    while (window) {
-        int x = rand() % window;
-        struct list_head *it = head->next;
-        for (int i = 0; i < x; ++i)
-            it = it->next;
+    size_t len = q_size(head);
+    size_t i = 0;
+    struct list_head *it, *parray[len];
+    while (!list_empty(head)) {
+        it = head->next;
         list_del_init(it);
-        list_add(it, head);
+        parray[i] = it;
+        ++i;
+    }
+    INIT_LIST_HEAD(head);
+    /* Queue is empty now. */
+
+    size_t window = len;
+    /* Fisher-Yates shuffle */
+    srand(time(NULL));
+    for (i = 0; i < len - 1; ++i) {
+        int x = rand() % window;
+        struct list_head *tmp = parray[x];
+        parray[x] = parray[window - 1];
+        parray[window - 1] = tmp;
         --window;
+    }
+
+    /* Insert the shuffled nodes into queue. */
+    i = 0;
+    while (i < len) {
+        list_add_tail(parray[i], head);
+        ++i;
     }
 
     return true;
