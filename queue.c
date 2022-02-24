@@ -423,22 +423,20 @@ bool q_shuffle(struct list_head *head)
     /* Queue is empty now. */
 
     size_t window = len;
-    /* Fisher-Yates shuffle */
     srand(time(NULL));
+
+    /* Fisher-Yates shuffle */
     for (i = 0; i < len - 1; ++i) {
         int x = rand() % window;
-        struct list_head *tmp = parray[x];
+
+        /* Insert the randomly picked node back to queue. */
+        list_add_tail(parray[x], head);
+
+        /* Replace the randomly picked node with that at the end of window */
         parray[x] = parray[window - 1];
-        parray[window - 1] = tmp;
         --window;
     }
-
-    /* Insert the shuffled nodes into queue. */
-    i = 0;
-    while (i < len) {
-        list_add_tail(parray[i], head);
-        ++i;
-    }
+    list_add_tail(parray[0], head);
 
     return true;
 }
