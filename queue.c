@@ -8,6 +8,49 @@
 #include "queue.h"
 #include "report.h"
 
+
+// ---------- my_strlen() begin -------------
+// reference:
+// https://github.com/eblot/newlib/blob/master/newlib/libc/string/strlen.c
+#define LBLOCKSIZE (sizeof(long))
+#define UNALIGNED(x) ((long) x & (LBLOCKSIZE - 1))
+#define DETECTNULL(x) (((x) -0x0101010101010101) & ~(x) &0x8080808080808080)
+
+size_t my_strlen(const char *s)
+{
+    const char *start = s;
+
+    unsigned long *aligned_addr;
+
+    /* Align the pointer, so we can search a word at a time.  */
+    while (UNALIGNED(s)) {
+        if (*s == '\0')
+            return s - start;
+        s++;
+    }
+
+    /* If the string is word-aligned,
+       we can check for the presence of
+       a null in each word-sized block.
+    */
+    aligned_addr = (unsigned long *) s;
+    while (!DETECTNULL(*aligned_addr))
+        aligned_addr++;
+
+    /* Once a null is detected, we check
+       each byte in that block for a
+       precise position of the null.
+    */
+    s = (char *) aligned_addr;
+
+    while (*s)
+        s++;
+
+    return s - start;
+}
+// ---------- my_strlen() end ---------------
+
+
 /* Notice: sometimes, Cppcheck would find the potential NULL pointer bugs,
  * but some of them cannot occur. You can suppress them by adding the
  * following line.
@@ -53,7 +96,7 @@ void q_free(struct list_head *l)
  */
 bool q_init_element(element_t *e, char *s)
 {
-    size_t len = strlen(s) + 1;
+    size_t len = my_strlen(s) + 1;
     e->value = malloc(len);
     if (!e->value)
         return false;
@@ -146,7 +189,8 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 
     element_t *target = list_entry(head->next, element_t, list);
     list_del_init(head->next);
-    strncpy(sp, target->value, bufsize - 1);
+    // strncpy(sp, target->value, bufsize - 1);
+    memcpy(sp, target->value, bufsize - 1);
 
     sp[bufsize - 1] = '\0';
     return target;
@@ -163,7 +207,8 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 
     element_t *target = list_entry(head->prev, element_t, list);
     list_del_init(head->prev);
-    strncpy(sp, target->value, bufsize - 1);
+    // strncpy(sp, target->value, bufsize - 1);
+    memcpy(sp, target->value, bufsize - 1);
 
     sp[bufsize - 1] = '\0';
     return target;
