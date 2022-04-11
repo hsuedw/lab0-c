@@ -4,9 +4,64 @@
 #include <string.h>
 #include <time.h>
 
+#include <limits.h>
+#include <stddef.h>
+
 #include "harness.h"
 #include "queue.h"
 #include "report.h"
+
+/* Nonzero if either X or Y is not aligned on a "long" boundary */
+#define UNALIGNED(X) ((long) X & (sizeof(long) - 1))
+
+/* How many bytes are loaded each iteration of the word copy loop */
+#define LBLOCKSIZE (sizeof(long))
+
+/* Threshhold for punting to the bytewise iterator */
+#define TOO_SMALL(LEN) ((LEN) < LBLOCKSIZE)
+
+#if LONG_MAX == 2147483647L
+#define DETECT_NULL(X) (((X) -0x01010101) & ~(X) &0x80808080)
+#else
+#if LONG_MAX == 9223372036854775807L
+/* Nonzero if X (a long int) contains a NULL byte. */
+#define DETECT_NULL(X) (((X) -0x0101010101010101) & ~(X) &0x8080808080808080)
+#else
+#error long int is not a 32bit or 64bit type.
+#endif
+#endif
+
+#define DETECT_CHAR(X, MASK) (DETECT_NULL(X ^ MASK))
+
+size_t my_strlen(const char *str)
+{
+    unsigned char *s = (unsigned char *) str;
+
+    if (!s)
+        return 0;
+
+    size_t len = 0;
+    while (UNALIGNED(s)) {
+        if (*s == '\0')
+            return len;
+        ++len;
+        ++s;
+    }
+
+    unsigned long *as = (unsigned long *) s;
+    while (!DETECT_NULL(*as)) {
+        len += LBLOCKSIZE;
+        ++as;
+    }
+
+    s = (unsigned char *) as;
+    while (*s != '\0') {
+        ++s;
+        ++len;
+    }
+
+    return len;
+}
 
 /* Notice: sometimes, Cppcheck would find the potential NULL pointer bugs,
  * but some of them cannot occur. You can suppress them by adding the
@@ -51,9 +106,10 @@ void q_free(struct list_head *l)
  * Assume e and s are not NULL and point to valid memory address.
  * Return true if successful. Otherwise, return false.
  */
+#if 0
 bool q_init_element(element_t *e, char *s)
 {
-    size_t len = strlen(s) + 1;
+    size_t len = my_strlen(s) + 1;
     e->value = malloc(len);
     if (!e->value)
         return false;
@@ -63,6 +119,7 @@ bool q_init_element(element_t *e, char *s)
 
     return true;
 }
+#endif
 
 /*
  * q_new_element() create a new object of element_t.
@@ -74,10 +131,15 @@ element_t *q_new_element(char *s)
     if (!ne)
         return NULL;
 
-    if (!q_init_element(ne, s)) {
+    size_t len = my_strlen(s) + 1;
+    ne->value = malloc(len);
+    if (!ne->value) {
         free(ne);
         return NULL;
     }
+
+    strncpy(ne->value, s, len);
+    INIT_LIST_HEAD(&ne->list);
 
     return ne;
 }
